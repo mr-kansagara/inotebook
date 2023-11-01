@@ -2,6 +2,11 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const jWT_SECRATE = "thisismynamerajkansagara";
+
 
 // creating the user POst : api/auth/createuser  no log in required 
 
@@ -24,13 +29,27 @@ router.post('/createuser', [
         if (user) {
             return res.status(400).json({ error: "this User is already exist" });   //conflict status code for already exist user
         }
+
+        const salt = await bcrypt.genSalt(10);
+        const sequrefunction = await bcrypt.hashSync(req.body.password, salt);
+        // const sequrefunction = req.body.password ;
+
         user = await User.create({
             name: req.body.name,
             email: req.body.email,
-            password: req.body.password,
+            password: sequrefunction
         });
 
-        res.json(user)
+        const data = {
+            user: {
+                id: user.id
+            }
+        }
+        const AuthToken = jwt.sign(data, jWT_SECRATE);
+        console.log(AuthToken);
+
+        // res.json(user)
+        res.json({AuthToken})
     } catch (error) {
         console.error(error.message);
         res.status(500).send("some error occured.");
